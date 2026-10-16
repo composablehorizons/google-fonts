@@ -1,0 +1,22 @@
+name: Compose Google Fonts
+description: Load Google Fonts in Compose Multiplatform apps.
+groupId: com.composables
+artifactId: google-fonts
+version: 0.1.0-SNAPSHOT
+url: https://github.com/composablehorizons/google-fonts
+licenses:
+  - name: MIT License
+    url: https://opensource.org/license/mit
+    distribution: repo
+developers:
+  - id: composablehorizons
+    name: Composable Horizons
+    email: alex@composables.com
+    url: https://composables.com
+scm:
+  connection: scm:git:https://github.com/composablehorizons/google-fonts.git
+  developerConnection: scm:git:ssh://git@github.com/composablehorizons/google-fonts.git
+  url: https://github.com/composablehorizons/google-fonts
+issueManagement:
+  system: GitHub Issues
+  url: https://github.com/composablehorizons/google-fonts/issues
