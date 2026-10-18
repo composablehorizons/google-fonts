@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-18
+
+### Fixed
+
+- Prevent loaded fonts from briefly reverting to the fallback when a screen is recreated.
+
 ## [0.1.0] - 2026-10-16
 
 ### Added

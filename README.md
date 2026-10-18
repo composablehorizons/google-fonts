@@ -20,7 +20,7 @@ repositories {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("com.composables:google-fonts:0.1.0")
+            implementation("com.composables:google-fonts:0.1.1")
         }
     }
 }
