@@ -6,7 +6,7 @@ Load a Google Fonts family in a Compose Multiplatform app. The library supports 
 val fontFamily = rememberGoogleFontFamily("Inter", weights = listOf(400, 700))
 ```
 
-Import `com.composables.googlefonts.rememberGoogleFontFamily`. The function returns `FontFamily.SansSerif` while the font loads, or the fallback you pass. It keeps the fallback if loading fails. Fonts are fetched from Google Fonts when needed; this repository does not bundle font files.
+Import `com.composables.googlefonts.rememberGoogleFontFamily`. The function returns `FontFamily.SansSerif` while the font loads, or the fallback you pass. It keeps the fallback if loading fails. Loaded families are reused across compositions, so recreating a screen does not briefly switch back to its fallback. Fonts are fetched from Google Fonts when needed; this repository does not bundle font files.
 
 ## Installation
 

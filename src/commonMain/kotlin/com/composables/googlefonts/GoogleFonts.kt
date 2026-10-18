@@ -2,13 +2,12 @@ package com.composables.googlefonts
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import kotlinx.coroutines.CancellationException
+
+private val loadedFamilies = mutableStateMapOf<GoogleFontRequest, FontFamily>()
 
 @Composable
 fun rememberGoogleFontFamily(
@@ -18,11 +17,11 @@ fun rememberGoogleFontFamily(
     fallback: FontFamily = FontFamily.SansSerif,
 ): FontFamily {
     val request = GoogleFontRequest(family.trim(), weights.distinct().sorted(), style)
-    var loaded by remember(request) { mutableStateOf<FontFamily?>(null) }
+    val loaded = loadedFamilies[request]
     val load = rememberGoogleFontLoader()
     LaunchedEffect(request, load) {
         try {
-            loaded = load(request)
+            if (loadedFamilies[request] == null) loadedFamilies[request] = load(request)
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {
@@ -32,7 +31,11 @@ fun rememberGoogleFontFamily(
     return loaded ?: fallback
 }
 
-internal data class GoogleFontRequest(val family: String, val weights: List<Int>, val style: FontStyle) {
+internal data class GoogleFontRequest(
+    val family: String,
+    val weights: List<Int>,
+    val style: FontStyle,
+) {
     init {
         require(family.isNotBlank()) { "A Google Fonts family name is required" }
         require(weights.isNotEmpty() && weights.all { it in 1..1000 }) {
@@ -43,4 +46,5 @@ internal data class GoogleFontRequest(val family: String, val weights: List<Int>
 
 @Composable
 internal expect fun rememberGoogleFontLoader(): suspend (GoogleFontRequest) -> FontFamily
+
 internal expect fun reportFontFailure(request: GoogleFontRequest, error: Exception)
