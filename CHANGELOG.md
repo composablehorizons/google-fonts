@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-24
+
+### Fixed
+
+- Support automatic font bundling in Compose Desktop projects using the Kotlin/JVM plugin, without requiring a multiplatform module.
+
 ## [0.2.0] - 2026-10-24
 
 ### Added
