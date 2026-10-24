@@ -10,12 +10,17 @@ import org.jetbrains.compose.ComposeExtension
 import org.jetbrains.compose.ComposePlugin
 import org.jetbrains.compose.resources.ResourcesExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
+import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
 
 class GoogleFontsPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         val extension = project.extensions.create("googleFonts", GoogleFontsExtension::class.java)
         extension.resourcesDirectory.convention(project.layout.projectDirectory.dir("src/commonMain/composeResources"))
+        project.pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
+            extension.resourcesDirectory.convention(project.layout.projectDirectory.dir("src/main/composeResources"))
+        }
         val generate = project.tasks.register("generateGoogleFonts", GenerateGoogleFonts::class.java) { task ->
             task.group = "google fonts"
             task.description = "Bundles configured Google Fonts and generates Compose accessors."
@@ -34,8 +39,12 @@ class GoogleFontsPlugin : Plugin<Project> {
             generate.configure { it.families.set(encoded) }
             if (project.plugins.hasPlugin("org.jetbrains.kotlin.multiplatform")) {
                 configureMultiplatform(project, extension, generate)
+            } else if (project.plugins.hasPlugin("org.jetbrains.kotlin.jvm") &&
+                !project.plugins.hasPlugin("com.android.application") && !project.plugins.hasPlugin("com.android.library")) {
+                val main = project.extensions.getByType(KotlinJvmProjectExtension::class.java).sourceSets.getByName("main")
+                configureComposeResources(project, extension, generate, main)
             } else if (!project.plugins.hasPlugin("com.android.application") && !project.plugins.hasPlugin("com.android.library")) {
-                throw GradleException("Apply com.composables.google-fonts to an Android app, Android library, or Compose Multiplatform module.")
+                throw GradleException("Apply com.composables.google-fonts to an Android, Compose Multiplatform, or Compose JVM module.")
             }
         }
 
@@ -68,8 +77,19 @@ class GoogleFontsPlugin : Plugin<Project> {
 
     @Suppress("DEPRECATION")
     private fun configureMultiplatform(project: Project, extension: GoogleFontsExtension, generate: TaskProvider<GenerateGoogleFonts>) {
-        if (!project.plugins.hasPlugin("org.jetbrains.compose")) throw GradleException("Apply org.jetbrains.compose to bundle Google Fonts in a multiplatform module.")
         val kotlin = project.extensions.getByType(KotlinMultiplatformExtension::class.java)
+        configureComposeResources(project, extension, generate, kotlin.sourceSets.getByName("commonMain"))
+        kotlin.targets.configureEach { target ->
+            if (target.platformType == KotlinPlatformType.wasm) {
+                target.compilations.getByName("main").defaultSourceSet.kotlin.srcDir(generate.flatMap { it.wasmDirectory })
+            }
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun configureComposeResources(project: Project, extension: GoogleFontsExtension,
+        generate: TaskProvider<GenerateGoogleFonts>, sourceSet: KotlinSourceSet) {
+        if (!project.plugins.hasPlugin("org.jetbrains.compose")) throw GradleException("Apply org.jetbrains.compose to bundle Google Fonts in a Compose module.")
         val resources = project.extensions.getByType(ComposeExtension::class.java).extensions.getByType(ResourcesExtension::class.java)
         if (resources.generateResClass == resources.never) throw GradleException("Enable Compose resource accessors to bundle Google Fonts.")
         val resourcePackage = resources.packageOfResClass.ifEmpty {
@@ -87,14 +107,8 @@ class GoogleFontsPlugin : Plugin<Project> {
             it.resourceDirectory.set(project.layout.buildDirectory.dir("generated/googleFonts/composeResources"))
             it.existingResources.from(extension.resourcesDirectory)
         }
-        resources.customDirectory("commonMain", generate.flatMap { it.resourceDirectory })
-        val commonMain = kotlin.sourceSets.getByName("commonMain")
-        commonMain.kotlin.srcDir(generate.flatMap { it.kotlinDirectory })
-        commonMain.dependencies { implementation(ComposePlugin.CommonComponentsDependencies.resources) }
-        kotlin.targets.configureEach { target ->
-            if (target.platformType == KotlinPlatformType.wasm) {
-                target.compilations.getByName("main").defaultSourceSet.kotlin.srcDir(generate.flatMap { it.wasmDirectory })
-            }
-        }
+        resources.customDirectory(sourceSet.name, generate.flatMap { it.resourceDirectory })
+        sourceSet.kotlin.srcDir(generate.flatMap { it.kotlinDirectory })
+        sourceSet.dependencies { implementation(ComposePlugin.CommonComponentsDependencies.resources) }
     }
 }

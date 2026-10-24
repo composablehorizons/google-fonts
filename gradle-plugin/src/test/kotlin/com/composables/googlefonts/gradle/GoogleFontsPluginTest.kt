@@ -12,6 +12,50 @@ import kotlin.test.*
 class GoogleFontsPluginTest {
     @get:Rule val temporary = TemporaryFolder()
 
+    @Test fun `plain JVM bundles fonts automatically and preserves main resources offline`() {
+        val root = fixture("""
+            plugins {
+                kotlin("jvm") version "2.4.0"
+                id("com.composables.google-fonts") version "${System.getProperty("googleFonts.testVersion")}"
+                id("org.jetbrains.compose") version "1.12.0"
+                id("org.jetbrains.kotlin.plugin.compose") version "2.4.0"
+            }
+            group = "example"
+            dependencies { implementation("org.jetbrains.compose.ui:ui:1.12.0") }
+            compose.resources {
+                packageOfResClass = "example.resources"
+                nameOfResClass = "AppRes"
+            }
+        """)
+        root.resolve("src/main/composeResources/files/existing.txt").apply {
+            parentFile.mkdirs(); writeText("existing resource")
+        }
+        root.resolve("src/main/kotlin/Usage.kt").apply {
+            parentFile.mkdirs()
+            writeText("""
+                import androidx.compose.runtime.Composable
+                import com.composables.googlefonts.generated.GoogleFonts
+                @Composable fun useBundledFont() = GoogleFonts.Inter
+            """.trimIndent())
+        }
+        val first = run(root, "jar")
+        assertEquals(TaskOutcome.SUCCESS, first.task(":generateGoogleFonts")?.outcome)
+        val jar = root.resolve("build/libs").listFiles()!!.single { it.extension == "jar" }
+        ZipFile(jar).use { zip ->
+            val entries = zip.entries().asSequence().map { it.name }.toList()
+            assertEquals(4, entries.count { it.endsWith(".ttf") })
+            assertTrue(entries.any { it.endsWith("googleFonts/licenses/Inter.txt") })
+            assertTrue(entries.any { it.endsWith("files/existing.txt") })
+            assertTrue(entries.any { it.endsWith("GoogleFonts.class") })
+        }
+        val second = run(root, "jar")
+        assertEquals(TaskOutcome.UP_TO_DATE, second.task(":generateGoogleFonts")?.outcome)
+        assertContains(second.output, "Reusing configuration cache")
+        val lock = root.resolve("google-fonts.lock").readText()
+        run(root, "clean", "jar", "--offline")
+        assertEquals(lock, root.resolve("google-fonts.lock").readText())
+    }
+
     @Test fun `CMP builds JVM and Wasm automatically and preserves existing resources`() {
         val root = fixture("""
             plugins {
