@@ -22,4 +22,4 @@ jobs:
         with:
           packages: 'platforms;android-37.0 build-tools;37.0.0'
           log-accepted-android-sdk-licenses: 'false'
-      - run: ./gradlew jvmTest publishToMavenLocal --no-configuration-cache
+      - run: ./gradlew jvmTest :gradle-plugin:check publishToMavenLocal --no-configuration-cache

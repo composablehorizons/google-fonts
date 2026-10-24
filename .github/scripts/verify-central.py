@@ -7,7 +7,11 @@ from pathlib import Path
 
 namespace = {"m": "http://maven.apache.org/POM/4.0.0"}
 urls = []
-for pom in sorted(Path("build/publications").glob("*/pom-default.xml")):
+publication_directories = [Path("build/publications"), Path("gradle-plugin/build/publications")]
+for directory in publication_directories:
+    if not any(directory.glob("*/pom-default.xml")):
+        raise SystemExit(f"No publication POMs found in {directory}")
+for pom in sorted(pom for directory in publication_directories for pom in directory.glob("*/pom-default.xml")):
     root = ET.parse(pom).getroot()
     group = root.findtext("m:groupId", namespaces=namespace)
     artifact = root.findtext("m:artifactId", namespaces=namespace)

@@ -14,3 +14,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "google-fonts"
+include(":gradle-plugin")

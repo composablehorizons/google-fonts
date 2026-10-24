@@ -1,0 +1,17 @@
+name: Compose Google Fonts Gradle Plugin
+description: Bundle Google Fonts automatically in Android and Compose Multiplatform apps.
+version: 0.2.0
+groupId: com.composables
+artifactId: google-fonts-gradle-plugin
+url: https://github.com/composablehorizons/google-fonts
+licenses:
+  - name: MIT License
+    url: https://opensource.org/license/mit
+developers:
+  - id: composablehorizons
+    name: Composable Horizons
+    url: https://composables.com
+scm:
+  connection: scm:git:https://github.com/composablehorizons/google-fonts.git
+  developerConnection: scm:git:ssh://git@github.com/composablehorizons/google-fonts.git
+  url: https://github.com/composablehorizons/google-fonts

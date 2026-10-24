@@ -47,7 +47,7 @@ jobs:
           packages: 'platforms;android-37.0 build-tools;37.0.0'
           log-accepted-android-sdk-licenses: 'false'
       - name: Install KPM
-        run: npm install --global @composablehorizons/kpm@0.1.0
+        run: npm install --global @composablehorizons/kpm@0.4.0
       - name: Validate release metadata
         run: |
           set -euo pipefail
@@ -55,9 +55,10 @@ jobs:
           git show-ref --verify "refs/tags/$RELEASE_REF"
           test "$(git rev-parse HEAD)" = "$(git rev-list -n 1 "$RELEASE_REF")"
           test "$RELEASE_REF" = "v$(kpm version)"
+          test "$RELEASE_REF" = "v$(cd gradle-plugin && kpm version)"
           grep -Fq "## [$(kpm version)] - " CHANGELOG.md
       - name: Verify tests and all platform publications
-        run: ./gradlew jvmTest publishToMavenLocal --no-configuration-cache --console=plain
+        run: ./gradlew jvmTest :gradle-plugin:check publishToMavenLocal --no-configuration-cache --console=plain
       - name: Publish with KPM
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.OSSRH_USERNAME }}
@@ -71,6 +72,7 @@ jobs:
             test -n "${!name}" || { echo "Missing publishing credential: $name" >&2; exit 1; }
           done
           kpm publish
+          (cd gradle-plugin && kpm publish)
       - name: Verify Maven Central availability
         run: python3 .github/scripts/verify-central.py
 
