@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Removed
+
+- Remove the JVM `googlefonts.verificationFallback` system property and the `GoogleFontLoading` load observer. Both existed only for one consumer's headless tooling; wait for text layout to settle instead of hooking into font loading.
+
 ## [0.2.1] - 2026-10-24
 
 ### Fixed

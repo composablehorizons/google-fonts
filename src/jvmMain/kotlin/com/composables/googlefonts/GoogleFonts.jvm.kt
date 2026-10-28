@@ -27,49 +27,25 @@ private val fontFiles by lazy { FontFileCache(defaultCacheDirectory(), ::downloa
 private val families = mutableMapOf<GoogleFontRequest, FontFamily>()
 private val familyLock = Mutex()
 
+/** Replaces network loading in this library's own tests. */
+internal var testFontLoader: (suspend (GoogleFontRequest) -> FontFamily)? = null
+
 @Composable
 internal actual fun rememberGoogleFontLoader(): suspend (GoogleFontRequest) -> FontFamily =
-    remember {
-        // Headless verification opts into deterministic typography without network/cache timing.
-        if (java.lang.Boolean.getBoolean("googlefonts.verificationFallback"))
-            { _: GoogleFontRequest -> FontFamily.SansSerif }
-        else ::loadGoogleFontFamily
+    remember { testFontLoader ?: ::loadGoogleFontFamily }
+
+internal suspend fun loadGoogleFontFamily(request: GoogleFontRequest): FontFamily =
+    familyLock.withLock {
+        families[request]
+            ?: FontFamily(
+                    request.weights.map { weight ->
+                        val key = FontFace(request.family, weight, request.style == FontStyle.Italic)
+                        val bytes = fontFiles.load(key)
+                        Font("google-fonts:${key.cacheKey}", bytes, FontWeight(weight), request.style)
+                    }
+                )
+                .also { families[request] = it }
     }
-
-/** Optional observer for headless export; each start returns its completion callback. */
-object GoogleFontLoading {
-    @Volatile var observer: ((String) -> (Throwable?) -> Unit)? = null
-}
-
-internal suspend fun loadGoogleFontFamily(request: GoogleFontRequest): FontFamily {
-    val completed =
-        GoogleFontLoading.observer?.invoke("${request.family} ${request.weights} ${request.style}")
-    try {
-        val family = familyLock.withLock {
-            families[request]
-                ?: FontFamily(
-                        request.weights.map { weight ->
-                            val key =
-                                FontFace(request.family, weight, request.style == FontStyle.Italic)
-                            val bytes = fontFiles.load(key)
-                            Font(
-                                "google-fonts:${key.cacheKey}",
-                                bytes,
-                                FontWeight(weight),
-                                request.style,
-                            )
-                        }
-                    )
-                    .also { families[request] = it }
-        }
-
-        completed?.invoke(null)
-        return family
-    } catch (failure: Throwable) {
-        completed?.invoke(failure)
-        throw failure
-    }
-}
 
 internal actual fun reportFontFailure(request: GoogleFontRequest, error: Exception) {
     Logger.getLogger("GoogleFonts")

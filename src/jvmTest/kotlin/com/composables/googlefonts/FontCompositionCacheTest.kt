@@ -15,8 +15,7 @@ import kotlinx.coroutines.yield
 class FontCompositionCacheTest {
     @Test
     fun newCompositionStartsWithThePreviouslyLoadedFamily() = runBlocking {
-        val previous = System.getProperty("googlefonts.verificationFallback")
-        System.setProperty("googlefonts.verificationFallback", "true")
+        testFontLoader = { FontFamily.SansSerif }
         val clock =
             object : MonotonicFrameClock {
                 override suspend fun <R> withFrameNanos(onFrame: (Long) -> R): R =
@@ -74,8 +73,7 @@ class FontCompositionCacheTest {
             compositions.forEach { it.dispose() }
             recomposer.cancel()
             runner.join()
-            if (previous == null) System.clearProperty("googlefonts.verificationFallback")
-            else System.setProperty("googlefonts.verificationFallback", previous)
+            testFontLoader = null
         }
     }
 }
