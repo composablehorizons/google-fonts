@@ -102,7 +102,7 @@ class GoogleFontsPluginTest {
                 @Composable fun fontsReady() = GoogleFonts.preload()
             """.trimIndent())
         }
-        val first = run(root, "compileKotlinJvm", "compileKotlinWasmJs", "compileKotlinIosSimulatorArm64", "bundleAndroidMainAar", "jvmJar")
+        val first = run(root, *cmpTasks)
         assertEquals(TaskOutcome.SUCCESS, first.task(":generateGoogleFonts")?.outcome)
         assertTrue(root.resolve("build/generated/googleFonts/composeResources/files/existing.txt").isFile)
         assertTrue(root.resolve("build/generated/googleFonts/composeResources/files/googleFonts/licenses/Inter.txt").isFile)
@@ -116,7 +116,7 @@ class GoogleFontsPluginTest {
             assertTrue(zip.entries().asSequence().any { it.name.endsWith("googlefonts_inter_400_normal.ttf") })
             assertTrue(zip.entries().asSequence().any { it.name.endsWith("googleFonts/licenses/Inter.txt") })
         }
-        val second = run(root, "compileKotlinJvm", "compileKotlinWasmJs", "compileKotlinIosSimulatorArm64", "bundleAndroidMainAar", "jvmJar")
+        val second = run(root, *cmpTasks)
         assertEquals(TaskOutcome.UP_TO_DATE, second.task(":generateGoogleFonts")?.outcome)
         assertContains(second.output, "Reusing configuration cache")
         val lock = root.resolve("google-fonts.lock").readText()
@@ -166,6 +166,12 @@ class GoogleFontsPluginTest {
         assertContains(second.output, "Reusing configuration cache")
         assertEquals(TaskOutcome.UP_TO_DATE, second.task(":generateGoogleFonts")?.outcome)
     }
+
+    // Building for iOS needs macOS; Linux CI covers the other targets and the release runs on macOS.
+    private val cmpTasks = listOfNotNull(
+        "compileKotlinJvm", "compileKotlinWasmJs", "bundleAndroidMainAar", "jvmJar",
+        "compileKotlinIosSimulatorArm64".takeIf { System.getProperty("os.name").startsWith("Mac") },
+    ).toTypedArray()
 
     private fun fixture(plugins: String): File {
         val root = temporary.newFolder()

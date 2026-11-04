@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
@@ -22,4 +22,4 @@ jobs:
         with:
           packages: 'platforms;android-37.0 build-tools;37.0.0'
           log-accepted-android-sdk-licenses: 'false'
-      - run: ./gradlew jvmTest :gradle-plugin:check publishToMavenLocal --no-configuration-cache
+      - run: ./gradlew jvmTest :gradle-plugin:check --console=plain
