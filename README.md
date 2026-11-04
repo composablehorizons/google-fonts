@@ -1,6 +1,4 @@
-![A Compose app rendering the same screen in Inter, Open Sans and Playfair Display]()
-
-_Demo idea: switch a screen between three Google Fonts and watch headings and body text change on Android, desktop and web side by side._
+![Google Font family names, each set in its own typeface](art/hero.png)
 
 # Compose Google Fonts
 
