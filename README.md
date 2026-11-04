@@ -37,7 +37,7 @@ repositories {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("com.composables:google-fonts:0.3.0")
+            implementation("com.composables:google-fonts:0.4.0")
         }
     }
 }
@@ -100,7 +100,7 @@ Then apply the plugin in your Android, Compose Multiplatform or Compose Desktop 
 ```kotlin
 plugins {
     // Your existing Android or Kotlin and Compose plugins.
-    id("com.composables.google-fonts") version "0.3.0"
+    id("com.composables.google-fonts") version "0.4.0"
 }
 ```
 

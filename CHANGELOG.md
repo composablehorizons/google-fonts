@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-04
+
 ### Changed
 
 - **Breaking:** `rememberGoogleFontFamily()` takes weights as arguments, such as `rememberGoogleFontFamily("Inter", 400, 700)`, and `italic = true` now loads italic faces alongside the regular ones, so one family renders both upright and italic text. This replaces the `weights` list and `style` parameters.
