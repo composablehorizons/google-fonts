@@ -4,7 +4,7 @@ plugins {
     id("com.android.kotlin.multiplatform.library") version "9.2.0" apply false
     alias(libs.plugins.jetbrains.kotlin.multiplatform)
     alias(libs.plugins.jetbrains.compose.compiler)
-    id("com.composables.kpm") version "0.1.0" apply false
+    id("com.composables.kpm") version "0.6.0" apply false
 }
 
 val standalone = project == rootProject
