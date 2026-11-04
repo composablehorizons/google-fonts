@@ -1,20 +1,50 @@
+![A Compose app rendering the same screen in Inter, Open Sans and Playfair Display]()
+
+_Demo idea: switch a screen between three Google Fonts and watch headings and body text change on Android, desktop and web side by side._
+
 # Compose Google Fonts
 
-Use Google Fonts in Android and Compose Multiplatform apps. Load families dynamically at runtime, or bundle selected fonts automatically at build time.
+Use any Google Font in Android and Compose Multiplatform apps, either loaded at runtime or bundled into your app at build time.
 
-## Dynamic fonts
+[![Maven Central](https://img.shields.io/maven-central/v/com.composables/google-fonts)](https://central.sonatype.com/artifact/com.composables/google-fonts)
+[![Verify](https://github.com/composablehorizons/google-fonts/actions/workflows/ci.yml/badge.svg)](https://github.com/composablehorizons/google-fonts/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
+## Features
+
+- **Any Google Font by name:** load `"Inter"` or `"Open Sans"` at runtime with one composable call.
+- **Bundled fonts without manual downloads:** a Gradle plugin fetches the fonts you list during your normal build and packages them with your app.
+- **Typed accessors:** use bundled families as `GoogleFonts.Inter`, with names checked by the compiler.
+- **Reproducible builds:** a lockfile pins every font file by checksum, and cached downloads keep `--offline` and `clean` builds working.
+- **Every Compose target:** Android, iOS, desktop (JVM) and web (Wasm), including Android-only and Compose Desktop modules.
+- **No flicker on recreation:** loaded families are reused across screens, so a recreated screen does not briefly fall back to the default font.
+- **Licenses included:** each bundled font ships with its license file.
+
+## Installation
+
+There are two ways to use Google Fonts, and you can use either or both:
+
+### Load fonts at runtime
+
+Add the library to `commonMain`:
 
 ```kotlin
-val fontFamily = rememberGoogleFontFamily("Inter", weights = listOf(400, 700))
+repositories {
+    mavenCentral()
+}
+
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            implementation("com.composables:google-fonts:0.3.0")
+        }
+    }
+}
 ```
 
-Import `com.composables.googlefonts.rememberGoogleFontFamily`. The function returns `FontFamily.SansSerif` while the font loads, or the fallback you pass. It keeps the fallback if loading fails. Loaded families are reused across compositions, so recreating a screen does not briefly switch back to its fallback. This API fetches fonts from Google Fonts when needed.
+### Bundle fonts at build time
 
-## Bundled fonts
-
-The Gradle plugin downloads your selected fonts during normal builds and packages them with your app. No separate download command or runtime Google Fonts dependency is required.
-
-Add Maven Central to `pluginManagement.repositories` in your app's `settings.gradle.kts`:
+Add Maven Central to `pluginManagement.repositories` in your `settings.gradle.kts`:
 
 ```kotlin
 pluginManagement {
@@ -26,18 +56,43 @@ pluginManagement {
 }
 ```
 
-Apply the plugin in your Android app/library or CMP module:
+Then apply the plugin in your Android, Compose Multiplatform or Compose Desktop module:
 
 ```kotlin
 plugins {
-    // Your existing Android or Kotlin Multiplatform and Compose plugins.
-    id("com.composables.google-fonts") version "0.2.0"
+    // Your existing Android or Kotlin and Compose plugins.
+    id("com.composables.google-fonts") version "0.3.0"
 }
+```
 
+Compose Multiplatform modules need the `org.jetbrains.compose` plugin; the Google Fonts plugin adds the Compose resources dependency for you.
+
+## Quick start
+
+Display text in Inter loaded from Google Fonts, by passing the family returned by `rememberGoogleFontFamily()` to `Text`:
+
+```kotlin
+import com.composables.googlefonts.rememberGoogleFontFamily
+
+@Composable
+fun Greeting() {
+    val inter = rememberGoogleFontFamily("Inter", weights = listOf(400, 700))
+    Text("Hello, Inter", fontFamily = inter)
+}
+```
+
+The text renders in `FontFamily.SansSerif` until Inter finishes loading, then switches to Inter.
+
+## Examples
+
+### Bundle a Google Font in your app
+
+Ship Inter and Open Sans inside your app, by listing them in the `googleFonts` block of your module's build file:
+
+```kotlin
 googleFonts {
     family("Inter") {
         weights(400, 500, 700)
-        italic() // Include normal and italic faces for each weight.
     }
     family("Open Sans") {
         weights(400, 700)
@@ -45,26 +100,71 @@ googleFonts {
 }
 ```
 
-Use the generated accessors in a composition:
+Build the module, then use each family through the generated `GoogleFonts` object:
 
 ```kotlin
 import com.composables.googlefonts.generated.GoogleFonts
 
-val family = GoogleFonts.Inter
-val headingFamily = GoogleFonts.OpenSans
+Text("Bundled heading", fontFamily = GoogleFonts.OpenSans)
 ```
 
-The default weight is 400. Set `accessor = "MyFont"` inside a family block to override its generated property name. Set `googleFonts.packageName` to change the generated Kotlin package, particularly when bundling fonts in multiple modules.
+A family without `weights(...)` includes only weight 400.
 
-Android uses native `res/font` resources and needs no CMP resource dependency. CMP requires `org.jetbrains.compose`; the plugin adds the matching Compose resources dependency automatically. Generated fonts, Kotlin, and licenses live under the module's `build/generated/googleFonts/`. Existing `src/commonMain/composeResources` contents are merged into the generated CMP resource directory. If you use a custom common resource directory, set `googleFonts.resourcesDirectory` to that directory instead of configuring `compose.resources.customDirectory("commonMain", ...)`.
+### Include italic styles
 
-Commit the generated `google-fonts.lock` beside your module's build file. It pins font and license URLs and SHA-256 checksums. Subsequent builds reuse downloads from `~/.gradle/caches/com.composables.google-fonts/v1/`, including after `clean`. A fresh machine needs network access for the locked files once; afterward `--offline` works. Downloads appear in Gradle's build output, and failures stop the build. To update one face, remove all lockfile lines with its resource-name prefix and rebuild; delete the lockfile to resolve everything again.
+Bundle the italic face of every listed weight, by calling `italic()` in the family block:
 
-Font licenses are included in Android assets or CMP files at `googleFonts/licenses/`.
+```kotlin
+googleFonts {
+    family("Inter") {
+        weights(400, 700)
+        italic()
+    }
+}
+```
 
-### Wasm startup
+Use italics at runtime by passing `FontStyle.Italic` to `rememberGoogleFontFamily()`:
 
-Wasm deployments include the font files alongside the application. Browsers still fetch them from your host. To wait until every selected font is ready, use the generated helper from your Wasm startup composition:
+```kotlin
+val interItalic = rememberGoogleFontFamily("Inter", style = FontStyle.Italic)
+```
+
+### Show a different font while loading
+
+Keep your own font on screen while a Google Font loads, or if it fails to load, by passing it as `fallback`:
+
+```kotlin
+val lora = rememberGoogleFontFamily("Lora", fallback = FontFamily.Serif)
+```
+
+### Rename a generated font accessor
+
+Access a bundled family under your own name, by setting `accessor` in its family block:
+
+```kotlin
+googleFonts {
+    family("Playfair Display") {
+        accessor = "Heading"
+    }
+}
+```
+
+The family is then available as `GoogleFonts.Heading` instead of `GoogleFonts.PlayfairDisplay`.
+
+### Bundle fonts in multiple modules
+
+Avoid clashing `GoogleFonts` objects across modules, by giving each module its own `packageName`:
+
+```kotlin
+googleFonts {
+    packageName.set("com.example.feature.fonts")
+    family("Inter")
+}
+```
+
+### Wait for bundled fonts before showing a web app
+
+Avoid a fallback font on the first frame of a Wasm app, by showing your UI only once `GoogleFonts.preload()` returns `true`:
 
 ```kotlin
 import com.composables.googlefonts.generated.GoogleFonts
@@ -78,58 +178,34 @@ fun WebApp() {
 }
 ```
 
-Preloading is optional. Without it, Compose can show a fallback while the bundled resources load.
+Browsers still fetch bundled fonts from your host, so without preloading Compose can show a fallback while they arrive.
 
-## Installation
+### Update a bundled font to its latest version
 
-Add Maven Central to your dependency repositories and add the library to `commonMain`:
+The plugin writes a `google-fonts.lock` file beside your module's build file. It pins each font and license file by checksum, so commit it.
+
+To fetch a newer version of one face, remove all lockfile lines starting with its resource name, such as `googlefonts_inter_400_normal`, and rebuild. Delete the lockfile to update every font.
+
+## Setup for custom Compose resource directories
+
+The plugin merges its fonts with your `src/commonMain/composeResources` folder. If your module keeps common resources somewhere else, the plugin needs to know where so it can merge them into the generated resources.
+
+Set `resourcesDirectory` instead of calling `compose.resources.customDirectory("commonMain", ...)`:
 
 ```kotlin
-repositories {
-    mavenCentral()
-}
-
-kotlin {
-    sourceSets {
-        commonMain.dependencies {
-            implementation("com.composables:google-fonts:0.2.0")
-        }
-    }
+googleFonts {
+    resourcesDirectory.set(layout.projectDirectory.dir("resources/common"))
 }
 ```
 
-## Build locally
+## Platform notes
 
-Use JDK 17, Xcode for iOS, and Android SDK platform 37. From this directory:
+- **Android:** bundled fonts become `res/font` resources and licenses go to `assets/googleFonts/licenses/`; no Compose resources dependency is needed.
+- **Compose Multiplatform and Desktop:** bundled fonts become Compose resources, and licenses are packaged under `files/googleFonts/licenses/`.
+- **Web (Wasm):** bundled fonts are served from your host alongside the app.
 
-```sh
-./gradlew jvmTest :gradle-plugin:check publishToMavenLocal
-```
+## Troubleshooting
 
-The standalone build includes all supported targets.
-
-## Releasing
-
-Install KPM:
-
-```sh
-npm install --global @composablehorizons/kpm@0.4.0
-```
-
-Set the release notes in `CHANGELOG.md`, then run from this directory:
-
-```sh
-./gradlew jvmTest :gradle-plugin:check publishToMavenLocal
-kpm version patch --no-git-tag-version
-release_version="$(kpm version)"
-(cd gradle-plugin && kpm version "$release_version" --no-git-tag-version)
-git add CHANGELOG.md package.yml gradle-plugin/package.yml
-git commit -m "Release $release_version"
-git push origin main
-git tag "v$release_version"
-git push origin "v$release_version"
-```
-
-The root and `gradle-plugin/package.yml` files own their Maven publishing metadata. Keep their versions equal before tagging a release. The tagged GitHub Actions release checks both versions, runs runtime and plugin tests, builds all publications, and publishes signed artifacts for both modules with KPM. After every artifact is downloadable from Maven Central, it creates a draft GitHub release from the changelog. Review and publish that draft separately.
-
-Publishing uses the `maven-central` environment and the organization secrets `OSSRH_USERNAME`, `OSSRH_PASSWORD`, `SIGNING_KEY_ID`, `SIGNING_PASSWORD`, and `SIGNING_KEY`.
+- **The build fails while downloading fonts.** The first build on a machine needs network access to fetch the locked files. Later builds reuse `~/.gradle/caches/com.composables.google-fonts/v1/`, including after `clean` and with `--offline`.
+- **A font stays on its fallback.** `rememberGoogleFontFamily()` fetches from Google Fonts at runtime, so the device needs network access and the family name must match Google Fonts exactly. The fallback is kept when loading fails.
+- **Two modules generate conflicting `GoogleFonts` objects.** Set a different `googleFonts.packageName` in each module.
