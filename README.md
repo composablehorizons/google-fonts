@@ -10,8 +10,8 @@ Use any Google Font in Android and Compose Multiplatform apps, either loaded at 
 
 ## Features
 
-- **Any Google Font by name:** load `"Inter"` or `"Open Sans"` at runtime with one composable call.
 - **Bundled fonts without manual downloads:** a Gradle plugin fetches the fonts you list during your normal build and packages them with your app.
+- **Any Google Font by name:** load `"Inter"` or `"Open Sans"` at runtime with one composable call.
 - **Typed accessors:** use bundled families as `GoogleFonts.Inter`, with names checked by the compiler.
 - **Reproducible builds:** a lockfile pins every font file by checksum, and cached downloads keep `--offline` and `clean` builds working.
 - **Every Compose target:** Android, iOS, desktop (JVM) and web (Wasm), including Android-only and Compose Desktop modules.
@@ -22,25 +22,9 @@ Use any Google Font in Android and Compose Multiplatform apps, either loaded at 
 
 There are two ways to use Google Fonts, and you can use either or both:
 
-### Load fonts at runtime
-
-Add the library to `commonMain`:
-
-```kotlin
-repositories {
-    mavenCentral()
-}
-
-kotlin {
-    sourceSets {
-        commonMain.dependencies {
-            implementation("com.composables:google-fonts:0.3.0")
-        }
-    }
-}
-```
-
 ### Bundle fonts at build time
+
+Choose this for the fonts your app's design uses. They ship inside your app and need no network at runtime.
 
 Add Maven Central to `pluginManagement.repositories` in your `settings.gradle.kts`:
 
@@ -65,48 +49,65 @@ plugins {
 
 Compose Multiplatform modules need the `org.jetbrains.compose` plugin; the Google Fonts plugin adds the Compose resources dependency for you.
 
-## Quick start
+### Load fonts at runtime
 
-Display text in Inter loaded from Google Fonts, by passing the family returned by `rememberGoogleFontFamily()` to `Text`:
+Choose this when the font is only known while the app runs, such as a font the user picks.
+
+Add the library to `commonMain`:
 
 ```kotlin
-import com.composables.googlefonts.rememberGoogleFontFamily
+repositories {
+    mavenCentral()
+}
 
-@Composable
-fun Greeting() {
-    val inter = rememberGoogleFontFamily("Inter", weights = listOf(400, 700))
-    Text("Hello, Inter", fontFamily = inter)
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            implementation("com.composables:google-fonts:0.3.0")
+        }
+    }
 }
 ```
 
-The text renders in `FontFamily.SansSerif` until Inter finishes loading, then switches to Inter.
+## Quick start
 
-## Examples
-
-### Bundle a Google Font in your app
-
-Ship Inter and Open Sans inside your app, by listing them in the `googleFonts` block of your module's build file:
+Display text in Inter bundled with your app, by listing it in the `googleFonts` block of your module's build file:
 
 ```kotlin
 googleFonts {
     family("Inter") {
-        weights(400, 500, 700)
-    }
-    family("Open Sans") {
         weights(400, 700)
     }
 }
 ```
 
-Build the module, then use each family through the generated `GoogleFonts` object:
+Build the module, then pass the generated `GoogleFonts.Inter` to `Text`:
 
 ```kotlin
-import com.composables.googlefonts.generated.GoogleFonts
+import com.example.app.fonts.GoogleFonts
 
-Text("Bundled heading", fontFamily = GoogleFonts.OpenSans)
+Text("Hello, Inter", fontFamily = GoogleFonts.Inter)
 ```
 
-A family without `weights(...)` includes only weight 400.
+`GoogleFonts` is generated in your module's package: `<namespace>.fonts` in Android modules, or `<group>.<module name>.fonts` in Compose Multiplatform and Desktop modules. A family without `weights(...)` includes only weight 400.
+
+## Examples
+
+### Load a Google Font at runtime
+
+Display text in a font chosen while the app runs, by passing the family returned by `rememberGoogleFontFamily()` to `Text`:
+
+```kotlin
+import com.composables.googlefonts.rememberGoogleFontFamily
+
+@Composable
+fun Greeting(fontName: String) {
+    val family = rememberGoogleFontFamily(fontName, 400, 700)
+    Text("Hello, $fontName", fontFamily = family)
+}
+```
+
+The text renders in `FontFamily.SansSerif` until the font finishes loading, then switches to it. Without weights, only weight 400 is loaded.
 
 ### Include italic styles
 
@@ -121,10 +122,16 @@ googleFonts {
 }
 ```
 
-Use italics at runtime by passing `FontStyle.Italic` to `rememberGoogleFontFamily()`:
+Load italics at runtime the same way, by passing `italic = true` to `rememberGoogleFontFamily()`:
 
 ```kotlin
-val interItalic = rememberGoogleFontFamily("Inter", style = FontStyle.Italic)
+val inter = rememberGoogleFontFamily("Inter", 400, 700, italic = true)
+```
+
+Either family then renders both upright and italic text, picking the face that matches `fontStyle`:
+
+```kotlin
+Text("Emphasis", fontFamily = inter, fontStyle = FontStyle.Italic)
 ```
 
 ### Show a different font while loading
@@ -149,13 +156,13 @@ googleFonts {
 
 The family is then available as `GoogleFonts.Heading` instead of `GoogleFonts.PlayfairDisplay`.
 
-### Bundle fonts in multiple modules
+### Choose the package of generated fonts
 
-Avoid clashing `GoogleFonts` objects across modules, by giving each module its own `packageName`:
+Import bundled fonts from a package of your choice, by setting `packageName` in the `googleFonts` block:
 
 ```kotlin
 googleFonts {
-    packageName.set("com.example.feature.fonts")
+    packageName.set("com.example.design.fonts")
     family("Inter")
 }
 ```
@@ -165,8 +172,8 @@ googleFonts {
 Avoid a fallback font on the first frame of a Wasm app, by showing your UI only once `GoogleFonts.preload()` returns `true`:
 
 ```kotlin
-import com.composables.googlefonts.generated.GoogleFonts
-import com.composables.googlefonts.generated.preload
+import com.example.app.fonts.GoogleFonts
+import com.example.app.fonts.preload
 
 @Composable
 fun WebApp() {
@@ -206,4 +213,3 @@ googleFonts {
 
 - **The build fails while downloading fonts.** The first build on a machine needs network access to fetch the locked files. Later builds reuse `~/.gradle/caches/com.composables.google-fonts/v1/`, including after `clean` and with `--offline`.
 - **A font stays on its fallback.** `rememberGoogleFontFamily()` fetches from Google Fonts at runtime, so the device needs network access and the family name must match Google Fonts exactly. The fallback is kept when loading fails.
-- **Two modules generate conflicting `GoogleFonts` objects.** Set a different `googleFonts.packageName` in each module.

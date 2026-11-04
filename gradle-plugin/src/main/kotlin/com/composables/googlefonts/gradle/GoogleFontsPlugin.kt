@@ -52,6 +52,7 @@ class GoogleFontsPlugin : Plugin<Project> {
             project.pluginManager.withPlugin(id) {
                 project.extensions.getByType(AndroidComponentsExtension::class.java).onVariants { variant ->
                     if (!project.plugins.hasPlugin("org.jetbrains.kotlin.multiplatform")) {
+                        extension.packageName.convention(variant.namespace.map { "$it.fonts" })
                         generate.configure {
                             it.multiplatform.set(false)
                             it.resourcePackage.set(variant.namespace)
@@ -92,14 +93,10 @@ class GoogleFontsPlugin : Plugin<Project> {
         if (!project.plugins.hasPlugin("org.jetbrains.compose")) throw GradleException("Apply org.jetbrains.compose to bundle Google Fonts in a Compose module.")
         val resources = project.extensions.getByType(ComposeExtension::class.java).extensions.getByType(ResourcesExtension::class.java)
         if (resources.generateResClass == resources.never) throw GradleException("Enable Compose resource accessors to bundle Google Fonts.")
-        val resourcePackage = resources.packageOfResClass.ifEmpty {
-            fun identifier(value: String) = value.lowercase().replace('-', '_').let {
-                if (it.firstOrNull()?.isDigit() == true) "_$it" else it
-            }
-            val group = identifier(project.group.toString())
-            val module = identifier(project.name)
-            listOf(group, module, "generated.resources").filter { it.isNotEmpty() }.joinToString(".")
-        }
+        val modulePackage = listOf(identifier(project.group.toString()), identifier(project.name))
+            .filter { it.isNotEmpty() }.joinToString(".")
+        val resourcePackage = resources.packageOfResClass.ifEmpty { "$modulePackage.generated.resources" }
+        extension.packageName.convention("$modulePackage.fonts")
         generate.configure {
             it.multiplatform.set(true)
             it.resourcePackage.set(resourcePackage)
@@ -111,4 +108,8 @@ class GoogleFontsPlugin : Plugin<Project> {
         sourceSet.kotlin.srcDir(generate.flatMap { it.kotlinDirectory })
         sourceSet.dependencies { implementation(ComposePlugin.CommonComponentsDependencies.resources) }
     }
+}
+
+private fun identifier(value: String) = value.lowercase().replace('-', '_').let {
+    if (it.firstOrNull()?.isDigit() == true) "_$it" else it
 }

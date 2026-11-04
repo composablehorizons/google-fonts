@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- **Breaking:** `rememberGoogleFontFamily()` takes weights as arguments, such as `rememberGoogleFontFamily("Inter", 400, 700)`, and `italic = true` now loads italic faces alongside the regular ones, so one family renders both upright and italic text. This replaces the `weights` list and `style` parameters.
+- **Breaking:** Bundled fonts are generated in each module's own package by default, such as `com.example.app.fonts.GoogleFonts`, so several modules can bundle fonts without clashing. Android modules use their `namespace`; Compose Multiplatform and Desktop modules use the project group and name. Set `googleFonts.packageName` to keep the previous `com.composables.googlefonts.generated` package.
+
 ## [0.3.0] - 2026-10-28
 
 ### Removed

@@ -3,8 +3,6 @@ package com.composables.googlefonts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.platform.Font
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -28,13 +26,13 @@ private suspend fun loadFamily(request: GoogleFontRequest): FontFamily =
     lock.withLock {
         families[request]
             ?: FontFamily(
-                    request.weights.map { weight ->
+                    request.faces.map { face ->
                         val family = request.family.encodeURLParameter()
-                        val italic = if (request.style == FontStyle.Italic) 1 else 0
+                        val italic = if (face.italic) 1 else 0
                         val css =
                             client
                                 .get(
-                                    "https://fonts.googleapis.com/css2?family=$family:ital,wght@$italic,$weight"
+                                    "https://fonts.googleapis.com/css2?family=$family:ital,wght@$italic,${face.weight}"
                                 )
                                 .bodyAsText()
                         // Browser CSS splits fonts by script. These English previews need the Latin
@@ -52,10 +50,10 @@ private suspend fun loadFamily(request: GoogleFontRequest): FontFamily =
                                 ?.groupValues
                                 ?.get(1) ?: error("Google Fonts did not return a font URL")
                         Font(
-                            "google-fonts:$family:$weight:$italic",
+                            "google-fonts:$family:${face.weight}:$italic",
                             client.get(url).body<ByteArray>(),
-                            FontWeight(weight),
-                            request.style,
+                            face.fontWeight,
+                            face.fontStyle,
                         )
                     }
                 )

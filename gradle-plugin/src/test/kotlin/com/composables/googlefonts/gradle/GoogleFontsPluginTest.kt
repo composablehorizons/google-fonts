@@ -34,7 +34,7 @@ class GoogleFontsPluginTest {
             parentFile.mkdirs()
             writeText("""
                 import androidx.compose.runtime.Composable
-                import com.composables.googlefonts.generated.GoogleFonts
+                import example.fixture.fonts.GoogleFonts
                 @Composable fun useBundledFont() = GoogleFonts.Inter
             """.trimIndent())
         }
@@ -89,7 +89,7 @@ class GoogleFontsPluginTest {
             parentFile.mkdirs()
             writeText("""
                 import androidx.compose.runtime.Composable
-                import com.composables.googlefonts.generated.GoogleFonts
+                import example.fixture.fonts.GoogleFonts
                 @Composable fun useBundledFont() = GoogleFonts.Inter
             """.trimIndent())
         }
@@ -97,8 +97,8 @@ class GoogleFontsPluginTest {
             parentFile.mkdirs()
             writeText("""
                 import androidx.compose.runtime.Composable
-                import com.composables.googlefonts.generated.GoogleFonts
-                import com.composables.googlefonts.generated.preload
+                import example.fixture.fonts.GoogleFonts
+                import example.fixture.fonts.preload
                 @Composable fun fontsReady() = GoogleFonts.preload()
             """.trimIndent())
         }
@@ -149,13 +149,13 @@ class GoogleFontsPluginTest {
             parentFile.mkdirs()
             writeText("""
                 import androidx.compose.runtime.Composable
-                import com.composables.googlefonts.generated.GoogleFonts
+                import example.app.fonts.GoogleFonts
                 @Composable fun useBundledFont() = GoogleFonts.Inter
             """.trimIndent())
         }
         val first = run(root, "assembleDebug")
         assertEquals(TaskOutcome.SUCCESS, first.task(":generateGoogleFonts")?.outcome)
-        val source = root.resolve("build/generated/googleFonts/kotlin/com/composables/googlefonts/generated/GoogleFonts.kt").readText()
+        val source = root.resolve("build/generated/googleFonts/kotlin/example/app/fonts/GoogleFonts.kt").readText()
         assertFalse(source.contains("org.jetbrains.compose.resources"))
         val apk = root.resolve("build/outputs/apk/debug/fixture-debug.apk")
         ZipFile(apk).use { zip ->

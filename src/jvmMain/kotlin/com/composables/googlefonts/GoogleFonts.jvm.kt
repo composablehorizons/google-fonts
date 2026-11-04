@@ -3,8 +3,6 @@ package com.composables.googlefonts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.platform.Font
 import java.net.URI
 import java.net.URLEncoder
@@ -38,10 +36,10 @@ internal suspend fun loadGoogleFontFamily(request: GoogleFontRequest): FontFamil
     familyLock.withLock {
         families[request]
             ?: FontFamily(
-                    request.weights.map { weight ->
-                        val key = FontFace(request.family, weight, request.style == FontStyle.Italic)
+                    request.faces.map { face ->
+                        val key = FontFace(request.family, face.weight, face.italic)
                         val bytes = fontFiles.load(key)
-                        Font("google-fonts:${key.cacheKey}", bytes, FontWeight(weight), request.style)
+                        Font("google-fonts:${key.cacheKey}", bytes, face.fontWeight, face.fontStyle)
                     }
                 )
                 .also { families[request] = it }

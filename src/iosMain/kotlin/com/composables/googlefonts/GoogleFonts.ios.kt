@@ -5,8 +5,6 @@ package com.composables.googlefonts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.platform.Font
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.darwin.Darwin
@@ -40,8 +38,9 @@ internal actual fun rememberGoogleFontLoader(): suspend (GoogleFontRequest) -> F
 
 internal suspend fun loadGoogleFontFamily(request: GoogleFontRequest): FontFamily = lock.withLock {
     families[request] ?: withContext(Dispatchers.Default) {
-        FontFamily(request.weights.map { weight ->
-            val key = "${request.family.encodeURLParameter()}-${weight}-${request.style.value}"
+        FontFamily(request.faces.map { face ->
+            val italic = if (face.italic) 1 else 0
+            val key = "${request.family.encodeURLParameter()}-${face.weight}-$italic"
             val directory = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, true)
                 .first() as String
             val path = "$directory/google-fonts-$key.ttf"
@@ -49,9 +48,8 @@ internal suspend fun loadGoogleFontFamily(request: GoogleFontRequest): FontFamil
                 data.bytes?.readBytes(data.length.toInt())
             }?.takeIf(::isFont)
             val bytes = cached ?: run {
-                val italic = if (request.style == FontStyle.Italic) 1 else 0
                 val css = client.get(
-                    "https://fonts.googleapis.com/css2?family=${request.family.encodeURLParameter()}:ital,wght@$italic,$weight"
+                    "https://fonts.googleapis.com/css2?family=${request.family.encodeURLParameter()}:ital,wght@$italic,${face.weight}"
                 ) { header("User-Agent", "Java/17") }.bodyAsText()
                 val matches = Regex("url\\(([^)]+)\\)\\s+format\\(['\"]truetype['\"]\\)").findAll(css).toList()
                 require(matches.size == 1) { "Expected one complete TrueType font" }
@@ -65,7 +63,7 @@ internal suspend fun loadGoogleFontFamily(request: GoogleFontRequest): FontFamil
                     }
                 }
             }
-            Font("google-fonts:$key", bytes, FontWeight(weight), request.style)
+            Font("google-fonts:$key", bytes, face.fontWeight, face.fontStyle)
         })
     }.also { families[request] = it }
 }

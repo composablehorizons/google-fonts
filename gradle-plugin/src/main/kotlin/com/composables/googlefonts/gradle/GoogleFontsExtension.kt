@@ -8,9 +8,8 @@ import org.gradle.api.provider.Property
 import javax.inject.Inject
 
 abstract class GoogleFontsExtension @Inject constructor(private val objects: ObjectFactory) {
-    /** Package containing the generated GoogleFonts object. */
+    /** Package containing the generated GoogleFonts object. Defaults to the module's namespace, or its group and name, followed by `.fonts`. */
     val packageName: Property<String> = objects.property(String::class.java)
-        .convention("com.composables.googlefonts.generated")
 
     /** Existing CMP resources to merge with bundled fonts. */
     abstract val resourcesDirectory: DirectoryProperty

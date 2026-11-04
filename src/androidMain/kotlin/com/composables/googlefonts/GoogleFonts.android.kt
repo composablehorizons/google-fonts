@@ -7,8 +7,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpTimeout
@@ -42,9 +40,9 @@ private val lock = Mutex()
 private suspend fun loadGoogleFontFamily(directory: File, request: GoogleFontRequest): FontFamily = lock.withLock {
     families[request] ?: withContext(Dispatchers.IO) {
         check(directory.isDirectory || directory.mkdirs()) { "Could not create font cache" }
-        FontFamily(request.weights.map { weight ->
-            val italic = if (request.style == FontStyle.Italic) 1 else 0
-            val url = "https://fonts.googleapis.com/css2?family=${request.family.encodeURLParameter()}:ital,wght@$italic,$weight"
+        FontFamily(request.faces.map { face ->
+            val italic = if (face.italic) 1 else 0
+            val url = "https://fonts.googleapis.com/css2?family=${request.family.encodeURLParameter()}:ital,wght@$italic,${face.weight}"
             val key = MessageDigest.getInstance("SHA-256").digest(url.toByteArray())
                 .joinToString("") { "%02x".format(it) }
             val file = File(directory, "$key.ttf")
@@ -65,7 +63,7 @@ private suspend fun loadGoogleFontFamily(directory: File, request: GoogleFontReq
                     temporary.delete()
                 }
             }
-            Font(file, weight = FontWeight(weight), style = request.style)
+            Font(file, weight = face.fontWeight, style = face.fontStyle)
         })
     }.also { families[request] = it }
 }
